@@ -12,9 +12,6 @@ import static org.openqa.selenium.support.ui.ExpectedConditions.visibilityOf;
 public class SeleniumDownloadPage extends BasePage<SeleniumDownloadPage> {
 
     @Visible
-    private HeaderComponent header;
-
-    @Visible
     @FindBy(css = "body > div.split-section.container.dark-background > div.right > p:nth-child(1) > a")
     private Link latestDownloadLink;
 

@@ -48,9 +48,8 @@ public class UITestLifecycle {
     /** Run this before the test suite to initialise a pool of drivers. */
     public static void beforeSuite() {
         if (Property.REUSE_BROWSER.getBoolean()) {
-            driverLifecycle =
-                    new MultiUseDriverLifecycle(
-                            Property.THREADS.getIntWithDefault(1));
+            var threadCount = Property.THREADS.getIntWithDefault(1);
+            driverLifecycle = new MultiUseDriverLifecycle(threadCount);
         } else {
             driverLifecycle = new SingleUseDriverLifecycle();
         }

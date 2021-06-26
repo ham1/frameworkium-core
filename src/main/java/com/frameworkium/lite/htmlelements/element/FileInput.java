@@ -4,7 +4,6 @@ import com.frameworkium.lite.common.properties.Property;
 import com.frameworkium.lite.ui.UITestLifecycle;
 import org.openqa.selenium.*;
 import org.openqa.selenium.remote.*;
-import org.openqa.selenium.support.events.EventFiringWebDriver;
 
 import java.io.File;
 import java.util.List;
@@ -61,8 +60,7 @@ public class FileInput extends TypifiedElement {
     private void setLocalFileDetectorIfRequired() {
         if (Property.GRID_URL.isSpecified()) {
             var webDriver = UITestLifecycle.get().getWebDriver();
-            var efDriver = (EventFiringWebDriver) webDriver;
-            var remoteDriver = (RemoteWebDriver) efDriver.getWrappedDriver();
+            var remoteDriver = (RemoteWebDriver) webDriver;
             remoteDriver.setFileDetector(new LocalFileDetector());
         }
     }

@@ -7,7 +7,9 @@ import com.frameworkium.lite.ui.capture.ScreenshotCapture;
 import com.frameworkium.lite.ui.capture.model.Command;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.openqa.selenium.*;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.remote.RemoteWebElement;
 import org.openqa.selenium.support.ui.Wait;
 
 import java.time.Duration;
@@ -20,14 +22,14 @@ public abstract class BasePage<T extends BasePage<T>> {
     protected Wait<WebDriver> wait;
     private Visibility visibility;
 
-    public BasePage() {
+    protected BasePage() {
         this(UITestLifecycle.get().getWebDriver(), UITestLifecycle.get().getWait());
     }
 
     /**
      * Added to enable testing and, one day, remove coupling to BaseUITest.
      */
-    public BasePage(WebDriver driver, Wait<WebDriver> wait) {
+    protected BasePage(WebDriver driver, Wait<WebDriver> wait) {
         this.driver = driver;
         this.wait = wait;
         this.visibility = new Visibility(wait);
@@ -132,8 +134,8 @@ public abstract class BasePage<T extends BasePage<T>> {
         if (ScreenshotCapture.isRequired()) {
             Command pageLoadCommand = new Command(
                     "load", "page", getSimplePageObjectName());
-            UITestLifecycle.get().getCapture().takeAndSendScreenshot(
-                    pageLoadCommand, driver);
+            UITestLifecycle.get().getCapture()
+                    .takeAndSendScreenshot(pageLoadCommand, driver);
         }
     }
 
@@ -144,14 +146,24 @@ public abstract class BasePage<T extends BasePage<T>> {
                 + getClass().getSimpleName();
     }
 
-    /** Get title of the web page. */
-    public String getTitle() {
-        return driver.getTitle();
-    }
-
-    /** Get page source code of the current page. */
-    public String getSource() {
-        return driver.getPageSource();
+    /**
+     * Currently broken with Selenium 4.0.0-beta-3.
+     * WebElementToJsonConverter.apply fails to convert our proxied WebElements
+     * to {@link RemoteWebElement}.
+     *
+     * @param javascript the Javascript to execute on the current page
+     * @return One of Boolean, Long, String, List or WebElement. Or null.
+     * @see JavascriptExecutor#executeScript(String, Object...)
+     */
+    private Object executeJS(String javascript, Object... objects) {
+        var jsExecutor = (JavascriptExecutor) driver;
+        try {
+            return jsExecutor.executeScript(javascript, objects);
+        } catch (Exception e) {
+            logger.error("Javascript execution failed!", e);
+            logger.debug("Failed Javascript: {}", javascript, e);
+            throw e;
+        }
     }
 
     /**
@@ -159,41 +171,15 @@ public abstract class BasePage<T extends BasePage<T>> {
      * @return One of Boolean, Long, String, List or WebElement. Or null.
      * @see JavascriptExecutor#executeScript(String, Object...)
      */
-    protected Object executeJS(String javascript, Object... objects) {
-        Object returnObj = null;
-        JavascriptExecutor jsExecutor = (JavascriptExecutor) driver;
+    protected Object executeJS(String javascript) {
+        var jsExecutor = (JavascriptExecutor) driver;
         try {
-            returnObj = jsExecutor.executeScript(javascript, objects);
+            return jsExecutor.executeScript(javascript);
         } catch (Exception e) {
-            logger.error("Javascript execution failed!");
-            logger.debug("Failed Javascript:" + javascript, e);
+            logger.error("Javascript execution failed!", e);
+            logger.debug("Failed Javascript: {}", javascript, e);
+            throw e;
         }
-        return returnObj;
-    }
-
-    /**
-     * Execute an asynchronous piece of JavaScript in the context of the
-     * currently selected frame or window. Unlike executing synchronous
-     * JavaScript, scripts executed with this method must explicitly signal they
-     * are finished by invoking the provided callback. This callback is always
-     * injected into the executed function as the last argument.
-     *
-     * <p>If executeAsyncScript throws an Exception it's caught and logged.
-     *
-     * @param javascript the JavaScript code to execute
-     * @return One of Boolean, Long, String, List, WebElement, or null.
-     * @see JavascriptExecutor#executeAsyncScript(String, Object...)
-     */
-    protected Object executeAsyncJS(String javascript, Object... objects) {
-        Object returnObj = null;
-        try {
-            JavascriptExecutor jsExecutor = (JavascriptExecutor) driver;
-            returnObj = jsExecutor.executeAsyncScript(javascript, objects);
-        } catch (Exception e) {
-            logger.error("Async Javascript execution failed!");
-            logger.debug("Failed Javascript:\n" + javascript, e);
-        }
-        return returnObj;
     }
 
 }
